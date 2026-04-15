@@ -15,3 +15,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+venv/
+*.db
+.env
+__pycache__/

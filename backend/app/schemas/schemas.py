@@ -3,7 +3,15 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.models.models import PaymentStatus, ReservationStatus, UserRole
+from app.models.models import (
+    AppointmentStatus,
+    AppointmentType,
+    Gender,
+    PaymentMethod,
+    PaymentStatus,
+    PrescriptionStatus,
+    UserRole,
+)
 
 DataT = TypeVar("DataT")
 
@@ -12,30 +20,84 @@ class ResponseModel(BaseModel, Generic[DataT]):
     data: DataT
 
 
+# ============== AUTH ==============
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class LoginRequest(BaseModel):
+    """Login request with email and password (accepts JSON)"""
+    email: EmailStr
+    password: str
+    clinic_id: int = 1
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    role: UserRole = UserRole.ADMIN
+    phone: str | None = None
+    role: UserRole = UserRole.RECEPTIONIST
+    clinic_id: int
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    is_active: bool | None = None
 
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    email: EmailStr
+    email: str
     full_name: str
     role: UserRole
+    phone: str | None = None
+    is_active: bool
+    last_login: datetime | None = None
 
 
-class ClientBase(BaseModel):
+# ============== CLINIC ==============
+
+class ClinicCreate(BaseModel):
+    name: str
+    slug: str
+    email: EmailStr
+    phone: str | None = None
+    address: str | None = None
+    city: str | None = None
+    country: str | None = None
+    license_number: str | None = None
+
+
+class ClinicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    slug: str
+    email: str
+    phone: str | None = None
+    address: str | None = None
+    subscription_status: str
+
+
+# ============== PATIENTS ==============
+
+class PatientBase(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     email: EmailStr
-    phone: str | None = Field(default=None, min_length=7, max_length=50)
+    phone: str | None = Field(default=None, max_length=20)
+    date_of_birth: datetime | None = None
+    gender: Gender | None = None
+    document_id: str | None = None
+    insurance_id: str | None = None
+    insurance_provider: str | None = None
+    address: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
 
     @field_validator("full_name")
     @classmethod
@@ -55,111 +117,163 @@ class ClientBase(BaseModel):
     def normalize_phone(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        return normalized or None
+        return value.strip() or None
 
 
-class ClientCreate(ClientBase):
-    gym_id: int | None = None
+class PatientCreate(PatientBase):
     is_active: bool = True
 
 
-class ClientUpdate(BaseModel):
-    full_name: str | None = Field(default=None, min_length=2, max_length=255)
+class PatientUpdate(BaseModel):
+    full_name: str | None = None
     email: EmailStr | None = None
-    phone: str | None = Field(default=None, min_length=7, max_length=50)
+    phone: str | None = None
+    date_of_birth: datetime | None = None
+    gender: Gender | None = None
+    document_id: str | None = None
+    insurance_id: str | None = None
+    insurance_provider: str | None = None
+    address: str | None = None
+    emergency_contact_name: str | None = None
+    emergency_contact_phone: str | None = None
     is_active: bool | None = None
-    gym_id: int | None = None
-
-    @field_validator("full_name")
-    @classmethod
-    def validate_optional_full_name(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        trimmed = value.strip()
-        if len(trimmed) < 2:
-            raise ValueError("full_name must contain at least 2 non-space characters")
-        return trimmed
-
-    @field_validator("email")
-    @classmethod
-    def normalize_optional_email(cls, value: EmailStr | None) -> str | None:
-        if value is None:
-            return None
-        return str(value).strip().lower()
-
-    @field_validator("phone")
-    @classmethod
-    def normalize_optional_phone(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        normalized = value.strip()
-        return normalized or None
 
 
-class ClientOut(ClientBase):
+class PatientOut(PatientBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    gym_id: int | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
 
-class ClassSessionCreate(BaseModel):
-    title: str
-    coach_name: str
-    starts_at: datetime
-    capacity: int = 15
+# ============== APPOINTMENTS ==============
+
+class AppointmentCreate(BaseModel):
+    patient_id: int
+    doctor_id: int
+    appointment_type: AppointmentType = AppointmentType.CONSULTATION
+    scheduled_at: datetime
+    duration_minutes: int = 30
+    notes: str | None = None
+    room: str | None = None
 
 
-class ClassSessionOut(ClassSessionCreate):
+class AppointmentUpdate(BaseModel):
+    appointment_type: AppointmentType | None = None
+    status: AppointmentStatus | None = None
+    scheduled_at: datetime | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    room: str | None = None
+    cancellation_reason: str | None = None
+
+
+class AppointmentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    patient_id: int
+    doctor_id: int
+    appointment_type: AppointmentType
+    status: AppointmentStatus
+    scheduled_at: datetime
+    duration_minutes: int
+    notes: str | None = None
+    room: str | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
-class ReservationCreate(BaseModel):
-    client_id: int
-    class_session_id: int
+# ============== MEDICAL RECORDS ==============
+
+class MedicalRecordCreate(BaseModel):
+    patient_id: int
+    appointment_id: int | None = None
+    chief_complaint: str | None = None
+    diagnosis: str | None = None
+    treatment_plan: str | None = None
+    allergies: str | None = None
+    chronic_conditions: str | None = None
+    vital_signs_json: str | None = None
+    notes: str | None = None
 
 
-class ReservationOut(BaseModel):
+class MedicalRecordUpdate(BaseModel):
+    chief_complaint: str | None = None
+    diagnosis: str | None = None
+    treatment_plan: str | None = None
+    allergies: str | None = None
+    chronic_conditions: str | None = None
+    vital_signs_json: str | None = None
+    notes: str | None = None
+
+
+class MedicalRecordOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    client_id: int
-    class_session_id: int
-    status: ReservationStatus
+    patient_id: int
+    appointment_id: int | None = None
+    chief_complaint: str | None = None
+    diagnosis: str | None = None
+    treatment_plan: str | None = None
+    allergies: str | None = None
+    chronic_conditions: str | None = None
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
-class AttendanceCreate(BaseModel):
-    reservation_id: int
+# ============== PRESCRIPTIONS ==============
+
+class PrescriptionCreate(BaseModel):
+    patient_id: int
+    medication_name: str
+    dosage: str
+    frequency: str
+    duration_days: int | None = None
 
 
-class AttendanceOut(BaseModel):
+class PrescriptionUpdate(BaseModel):
+    medication_name: str | None = None
+    dosage: str | None = None
+    frequency: str | None = None
+    duration_days: int | None = None
+    status: PrescriptionStatus | None = None
+
+
+class PrescriptionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    reservation_id: int
-    checked_in_at: datetime
+    patient_id: int
+    medication_name: str
+    dosage: str
+    frequency: str
+    duration_days: int | None = None
+    status: PrescriptionStatus
+    prescribed_at: datetime
 
+
+# ============== PAYMENTS ==============
 
 class PaymentCreate(BaseModel):
-    client_id: int
-    amount: float
-    status: PaymentStatus = PaymentStatus.PAID
+    patient_id: int
+    amount: float = Field(gt=0)
+    method: PaymentMethod = PaymentMethod.CASH
+    description: str | None = None
+
+
+class PaymentUpdate(BaseModel):
+    status: PaymentStatus | None = None
+    method: PaymentMethod | None = None
 
 
 class PaymentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    client_id: int
+    patient_id: int
     amount: float
     status: PaymentStatus
-    paid_at: datetime
-
-
-class DashboardSummary(BaseModel):
-    total_clients: int
-    total_sessions: int
-    active_reservations: int
-    check_ins_today: int
-    monthly_revenue: float
+    method: PaymentMethod
+    description: str | None = None
+    paid_at: datetime | None = None
+    created_at: datetime

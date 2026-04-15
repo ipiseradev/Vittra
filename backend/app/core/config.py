@@ -2,16 +2,48 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Trainity API"
+    # App
+    PROJECT_NAME: str = "MediClinic - Medical Management System"
+    APP_VERSION: str = "2.0.0"
     API_V1_PREFIX: str = "/api/v1"
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "sqlite:///./trainity.db"
-    SECRET_KEY: str = "change_me"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+    DEBUG: bool = False
+    
+    # Database
+    DATABASE_URL: str = "sqlite:////home/nacho/Trainity/backend/mediclinic.db"  # SQLite for local development
+    
+    # Security - MUST be set in .env or environment variables
+    SECRET_KEY: str = "dev-secret-key-minimum-32-chars-longsecure-change-this"  # Default for development
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # Reduced from 1440 to 15 minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ALGORITHM: str = "HS256"
+    
+    # CORS
     BACKEND_CORS_ORIGINS: list[str] = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
+        "http://localhost:5177",
+        "http://localhost:5178",
+    ]
+    
+    # Features
+    ENABLE_AUDIT_LOGGING: bool = True
+    ENABLE_2FA: bool = False
+    MAX_LOGIN_ATTEMPTS: int = 5
+    
+    # Email (for future notifications)
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str = "noreply@mediclinic.app"
+    
+    # Stripe (for future payments)
+    STRIPE_API_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

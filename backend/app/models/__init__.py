@@ -1,17 +1,21 @@
 from app.models.models import (
-    Attendance,
-    ClassSession,
-    Client,
+    Appointment,
+    AuditLog,
+    Clinic,
+    MedicalRecord,
+    Patient,
     Payment,
-    Reservation,
+    Prescription,
     User,
 )
 
 __all__ = [
     "User",
-    "Client",
-    "ClassSession",
-    "Reservation",
-    "Attendance",
+    "Patient",
+    "Appointment",
+    "MedicalRecord",
+    "Prescription",
     "Payment",
+    "Clinic",
+    "AuditLog",
 ]
