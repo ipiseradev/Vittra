@@ -8,7 +8,7 @@
 
 ## 📸 Dashboard Preview
 
-![MediClinic Dashboard](./docs/screenshots/dashboard.png)
+![MediClinic Dashboard](docs/screenshots/subir.png)
 
 **Features Showcased:**
 - 📊 **Real-time Metrics** - Patient counts, appointment status, revenue overview
