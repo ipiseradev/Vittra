@@ -4,6 +4,21 @@
 
 > **Enterprise-ready medical management system** with patient records, appointment scheduling, prescriptions, billing, and HIPAA compliance
 
+---
+
+## 📸 Dashboard Preview
+
+![MediClinic Dashboard](./docs/screenshots/dashboard.png)
+
+**Features Showcased:**
+- 📊 **Real-time Metrics** - Patient counts, appointment status, revenue overview
+- 📅 **Appointment Management** - Comprehensive scheduling with status tracking
+- 👥 **Patient Analytics** - Recent patients and activity insights
+- 💰 **Financial Dashboard** - Revenue tracking and payment statistics
+- 🎯 **Daily Summary** - Visual representation of clinic activity
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
