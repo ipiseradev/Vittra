@@ -1,4 +1,4 @@
-# MediClinic - Medical Management System v2.0
+# Vittra - Medical Management System v2.0
 
 **Premium SaaS Platform for Healthcare Clinics** 🏥
 
@@ -101,7 +101,7 @@ npm run dev
 ## 🏗️ Project Structure
 
 ```
-MediClinic/
+Vittra/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/endpoints/
