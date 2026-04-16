@@ -8,7 +8,8 @@
 
 ## 📸 Dashboard Preview
 
-![MediClinic Dashboard](docs/screenshots/subir.png)
+<img width="1846" height="925" alt="subir" src="https://github.com/user-attachments/assets/ae6374fe-12cd-4f17-ac0d-80520615fbcf" />
+
 
 **Features Showcased:**
 - 📊 **Real-time Metrics** - Patient counts, appointment status, revenue overview
