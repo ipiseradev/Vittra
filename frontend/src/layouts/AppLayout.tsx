@@ -33,7 +33,7 @@ export function AppLayout() {
 
               <div>
                 <p className="text-xl font-black tracking-tight text-neutral-950">
-                  Train<span className="text-neutral-400">ity</span>
+                  Vittra<span className="text-neutral-400">Clinic</span>
                 </p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400">
                   Clinical workspace

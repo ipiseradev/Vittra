@@ -148,4 +148,9 @@ export const trainityApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return apiFetch<Doctor[]>(`/doctors${suffix}`);
   },
+
+  //  Endpoints filtrados por usuario logueado
+  getMyAppointments: () => apiFetch<Appointment[]>("/citas/mis-citas"),
+
+  getMyPatients: () => apiFetch<Patient[]>("/pacientes/mis-pacientes"),
 };

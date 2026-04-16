@@ -43,7 +43,7 @@ const clinicNavGroups = [
   {
     title: 'Extras',
     items: [
-      { icon: BookOpen, label: 'Reservaciones', path: '/reservations' },
+      { icon: BookOpen, label: 'Recetas', path: '/reservations' },
       { icon: Video, label: 'Sesiones', path: '/sessions' },
       { icon: Settings, label: 'Configuración', path: '/settings' },
     ],
@@ -74,9 +74,9 @@ export function ClinicLayout() {
           {/* Branding */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center font-bold">
-              SA
+              VC
             </div>
-            <h1 className="text-xl font-bold">SaludAR</h1>
+            <h1 className="text-xl font-bold">Vittra Clinic</h1>
           </div>
 
           {/* Navigation */}
@@ -145,11 +145,11 @@ export function ClinicLayout() {
                 className="flex items-center gap-3 focus:outline-none"
               >
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">Dr. John Smith</p>
-                  <p className="text-sm text-gray-600">Clinic Admin</p>
+                  <p className="font-semibold text-gray-900">Ignacio Pisera</p>
+                  <p className="text-sm text-gray-600">Administrador</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center font-bold">
-                  JS
+                  IP
                 </div>
               </button>
 
