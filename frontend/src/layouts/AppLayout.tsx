@@ -10,8 +10,8 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard, end: true },
-  { label: "Pacientes", to: "/clients", icon: Users },
-  { label: "Agenda", to: "/sessions", icon: CalendarDays },
+  { label: "Pacientes", to: "/patients", icon: Users },
+  { label: "Agenda", to: "/appointments", icon: CalendarDays },
   { label: "Atención clínica", to: "/reservations", icon: FileText },
 ];
 

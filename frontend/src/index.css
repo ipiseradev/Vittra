@@ -1,3 +1,141 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --vittra-ink: #112033;
+    --vittra-muted: #5f7388;
+    --vittra-border: #d9e3ec;
+    --vittra-panel: rgba(255, 255, 255, 0.88);
+    --vittra-bg: #f4f8fb;
+    --vittra-primary: #146c94;
+    --vittra-primary-strong: #0d5a7b;
+    --vittra-accent: #0f9d8a;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen antialiased text-slate-900;
+    background:
+      radial-gradient(circle at top left, rgba(20, 108, 148, 0.13), transparent 28%),
+      radial-gradient(circle at top right, rgba(15, 157, 138, 0.10), transparent 24%),
+      linear-gradient(180deg, #f8fbfd 0%, var(--vittra-bg) 100%);
+    color: var(--vittra-ink);
+    font-family: "Segoe UI Variable", "Aptos", "Trebuchet MS", sans-serif;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(95, 115, 136, 0.4) transparent;
+  }
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-[28px] border border-slate-200/90 bg-white/90 shadow-[0_24px_80px_-38px_rgba(15,23,42,0.38)] backdrop-blur;
+  }
+
+  .surface-muted {
+    @apply rounded-[24px] border border-slate-200/80 bg-slate-50/90 backdrop-blur;
+  }
+
+  .page-shell {
+    @apply mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8;
+  }
+
+  .page-header {
+    @apply surface-card overflow-hidden p-6 sm:p-8;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 250, 252, 0.92)),
+      linear-gradient(135deg, rgba(20, 108, 148, 0.08), rgba(15, 157, 138, 0.06));
+  }
+
+  .page-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.3em] text-sky-700;
+  }
+
+  .page-title {
+    @apply mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl;
+  }
+
+  .page-description {
+    @apply mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base;
+  }
+
+  .metric-card {
+    @apply surface-card p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_26px_70px_-38px_rgba(20,108,148,0.38)];
+  }
+
+  .metric-label {
+    @apply text-sm font-medium text-slate-500;
+  }
+
+  .metric-value {
+    @apply mt-3 text-3xl font-bold tracking-tight text-slate-950;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold tracking-tight text-slate-950;
+  }
+
+  .section-copy {
+    @apply mt-1 text-sm leading-6 text-slate-500;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_-20px_rgba(20,108,148,0.65)] transition duration-200 hover:-translate-y-0.5 hover:bg-sky-800 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-100;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-4 focus:ring-sky-100;
+  }
+
+  .textarea-field {
+    @apply input-field min-h-[112px] resize-y;
+  }
+
+  .select-field {
+    @apply input-field appearance-none pr-10;
+  }
+
+  .field-label {
+    @apply mb-2 block text-sm font-semibold text-slate-700;
+  }
+
+  .pill {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  }
+
+  .table-shell {
+    @apply surface-card overflow-hidden;
+  }
+
+  .table-cell {
+    @apply px-5 py-4 text-sm text-slate-600;
+  }
+
+  .table-head {
+    @apply px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500;
+  }
+
+  .dashboard-grid {
+    @apply grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4;
+  }
+}

@@ -6,6 +6,8 @@ from app.models.models import (
     Patient,
     Payment,
     Prescription,
+    ScheduleBlock,
+    StudyOrder,
     User,
 )
 
@@ -18,4 +20,6 @@ __all__ = [
     "Payment",
     "Clinic",
     "AuditLog",
+    "StudyOrder",
+    "ScheduleBlock",
 ]

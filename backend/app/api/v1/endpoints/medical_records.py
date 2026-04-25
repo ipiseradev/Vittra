@@ -1,23 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import (
-    get_clinic_id,
-    get_current_user,
-    get_db,
-    require_doctor,
-)
+from app.api.deps import get_clinic_id, get_db, require_permission
 from app.models.models import User
-from app.schemas.schemas import (
-    MedicalRecordCreate,
-    MedicalRecordOut,
-    MedicalRecordUpdate,
-)
+from app.schemas.schemas import MedicalRecordCreate, MedicalRecordOut, MedicalRecordUpdate
 from app.services.services import (
     create_medical_record,
     get_medical_record,
     get_medical_records_by_patient,
     log_audit,
+    sign_off_medical_record,
     update_medical_record,
 )
 
@@ -29,10 +21,12 @@ def create_medical_record_endpoint(
     payload: MedicalRecordCreate,
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(require_doctor),
+    current_user: User = Depends(require_permission("medical_records:write")),
 ) -> MedicalRecordOut:
-    """Create medical record"""
-    record = create_medical_record(db, clinic_id, payload)
+    try:
+        record = create_medical_record(db, clinic_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     log_audit(
         db,
         clinic_id=clinic_id,
@@ -51,9 +45,8 @@ def get_patient_medical_history(
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("medical_records:read")),
 ) -> list[MedicalRecordOut]:
-    """Get medical history of patient"""
     records = get_medical_records_by_patient(db, clinic_id, patient_id, skip=skip, limit=limit)
     log_audit(
         db,
@@ -71,13 +64,11 @@ def get_medical_record_endpoint(
     record_id: int,
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("medical_records:read")),
 ) -> MedicalRecordOut:
-    """Get specific medical record"""
     record = get_medical_record(db, clinic_id, record_id)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical record not found")
-    
     log_audit(
         db,
         clinic_id=clinic_id,
@@ -95,19 +86,38 @@ def update_medical_record_endpoint(
     payload: MedicalRecordUpdate,
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(require_doctor),
+    current_user: User = Depends(require_permission("medical_records:write")),
 ) -> MedicalRecordOut:
-    """Update medical record"""
     record = update_medical_record(db, clinic_id, record_id, payload)
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical record not found")
-    
     log_audit(
         db,
         clinic_id=clinic_id,
         user_id=current_user.id,
         action="UPDATE",
         resource_type="MedicalRecord",
+        resource_id=record.id,
+    )
+    return record
+
+
+@router.post("/{record_id}/sign-off", response_model=MedicalRecordOut)
+def sign_medical_record_endpoint(
+    record_id: int,
+    db: Session = Depends(get_db),
+    clinic_id: int = Depends(get_clinic_id),
+    current_user: User = Depends(require_permission("medical_records:sign")),
+) -> MedicalRecordOut:
+    record = sign_off_medical_record(db, clinic_id, record_id, current_user.id)
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical record not found")
+    log_audit(
+        db,
+        clinic_id=clinic_id,
+        user_id=current_user.id,
+        action="UPDATE",
+        resource_type="MedicalRecordSignOff",
         resource_id=record.id,
     )
     return record

@@ -1,6 +1,7 @@
 import { apiFetch } from "./http";
 import type {
   Appointment,
+  AssistantProvider,
   ClassSession,
   Client,
   CreateAppointmentPayload,
@@ -9,6 +10,7 @@ import type {
   DashboardSummary,
   Doctor,
   Patient,
+  PatientAssistantChatResponse,
   Reservation,
   UpdateAppointmentPayload,
   UpdateClientPayload
@@ -65,23 +67,30 @@ export const trainityApi = {
     if (typeof params?.isActive === "boolean") {
       query.set("is_active", String(params.isActive));
     }
-    if (typeof params?.gymId === "number") {
-      query.set("gym_id", String(params.gymId));
-    }
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return apiFetch<Client[]>(`/clients${suffix}`);
+    return apiFetch<Client[]>(`/patients${suffix}`);
   },
 
   createClient: (payload: CreateClientPayload) =>
-    apiFetch<Client>("/clients", {
+    apiFetch<Client>("/patients", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        full_name: payload.full_name,
+        email: payload.email,
+        phone: payload.phone,
+        is_active: payload.is_active ?? true,
+      }),
     }),
 
   updateClient: (clientId: number, payload: UpdateClientPayload) =>
-    apiFetch<Client>(`/clients/${clientId}`, {
+    apiFetch<Client>(`/patients/${clientId}`, {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        full_name: payload.full_name,
+        email: payload.email,
+        phone: payload.phone,
+        is_active: payload.is_active,
+      }),
     }),
 
   getSessions: () => apiFetch<ClassSession[]>("/sessions"),
@@ -139,6 +148,48 @@ export const trainityApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return apiFetch<Patient[]>(`/patients${suffix}`);
   },
+
+  createPatient: (payload: {
+    full_name: string;
+    email: string;
+    phone?: string;
+    is_active?: boolean;
+  }) =>
+    apiFetch<Patient>("/patients", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: payload.full_name,
+        email: payload.email,
+        phone: payload.phone,
+        is_active: payload.is_active ?? true,
+      }),
+    }),
+
+  updatePatient: (
+    patientId: number,
+    payload: {
+      full_name?: string;
+      email?: string;
+      phone?: string;
+      is_active?: boolean;
+    }
+  ) =>
+    apiFetch<Patient>(`/patients/${patientId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  chatWithPatientAssistant: (
+    patientId: number,
+    payload: { message: string; provider?: AssistantProvider }
+  ) =>
+    apiFetch<PatientAssistantChatResponse>(`/patients/${patientId}/assistant/chat`, {
+      method: "POST",
+      body: JSON.stringify({
+        message: payload.message,
+        provider: payload.provider ?? "auto",
+      }),
+    }),
 
   getDoctors: (params?: { isActive?: boolean }) => {
     const query = new URLSearchParams();

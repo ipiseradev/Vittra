@@ -1,22 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import (
-    get_clinic_id,
-    get_current_user,
-    get_db,
-    require_doctor,
-)
+from app.api.deps import get_clinic_id, get_db, require_permission
 from app.models.models import User
 from app.schemas.schemas import (
     PrescriptionCreate,
     PrescriptionOut,
+    PrescriptionPrintableOut,
     PrescriptionUpdate,
 )
 from app.services.services import (
     create_prescription,
     get_prescriptions_by_patient,
     log_audit,
+    render_prescription_html,
+    renew_prescription,
     update_prescription,
 )
 
@@ -28,10 +26,17 @@ def create_prescription_endpoint(
     payload: PrescriptionCreate,
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(require_doctor),
+    current_user: User = Depends(require_permission("prescriptions:write")),
 ) -> PrescriptionOut:
-    """Create new prescription"""
-    prescription = create_prescription(db, clinic_id, payload)
+    try:
+        prescription = create_prescription(
+            db,
+            clinic_id,
+            payload,
+            signed_by_user_id=current_user.id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     log_audit(
         db,
         clinic_id=clinic_id,
@@ -50,8 +55,9 @@ def get_patient_prescriptions(
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
+    current_user: User = Depends(require_permission("prescriptions:read")),
 ) -> list[PrescriptionOut]:
-    """Get prescriptions for patient"""
+    _ = current_user
     return get_prescriptions_by_patient(db, clinic_id, patient_id, skip=skip, limit=limit)
 
 
@@ -61,13 +67,11 @@ def update_prescription_endpoint(
     payload: PrescriptionUpdate,
     db: Session = Depends(get_db),
     clinic_id: int = Depends(get_clinic_id),
-    current_user: User = Depends(require_doctor),
+    current_user: User = Depends(require_permission("prescriptions:write")),
 ) -> PrescriptionOut:
-    """Update prescription"""
     prescription = update_prescription(db, clinic_id, prescription_id, payload)
     if not prescription:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prescription not found")
-    
     log_audit(
         db,
         clinic_id=clinic_id,
@@ -77,3 +81,46 @@ def update_prescription_endpoint(
         resource_id=prescription.id,
     )
     return prescription
+
+
+@router.post("/{prescription_id}/renew", response_model=PrescriptionOut)
+def renew_prescription_endpoint(
+    prescription_id: int,
+    db: Session = Depends(get_db),
+    clinic_id: int = Depends(get_clinic_id),
+    current_user: User = Depends(require_permission("prescriptions:sign")),
+) -> PrescriptionOut:
+    try:
+        prescription = renew_prescription(
+            db,
+            clinic_id,
+            prescription_id,
+            signed_by_user_id=current_user.id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if not prescription:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prescription not found")
+    log_audit(
+        db,
+        clinic_id=clinic_id,
+        user_id=current_user.id,
+        action="CREATE",
+        resource_type="PrescriptionRenewal",
+        resource_id=prescription.id,
+    )
+    return prescription
+
+
+@router.get("/{prescription_id}/printable", response_model=PrescriptionPrintableOut)
+def get_prescription_printable(
+    prescription_id: int,
+    db: Session = Depends(get_db),
+    clinic_id: int = Depends(get_clinic_id),
+    current_user: User = Depends(require_permission("prescriptions:read")),
+) -> PrescriptionPrintableOut:
+    _ = current_user
+    html = render_prescription_html(db, clinic_id, prescription_id)
+    if not html:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prescription not found")
+    return PrescriptionPrintableOut(id=prescription_id, html=html)

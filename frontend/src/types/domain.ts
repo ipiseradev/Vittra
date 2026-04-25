@@ -114,6 +114,28 @@ export interface Patient {
   updated_at: string;
 }
 
+export type AssistantProvider = "auto" | "openai" | "anthropic" | "demo";
+
+export interface PatientAssistantContext {
+  patient_id: number;
+  full_name: string;
+  patient: Record<string, unknown>;
+  recent_medical_records: Record<string, unknown>[];
+  upcoming_appointments: Record<string, unknown>[];
+  generated_at?: string | null;
+}
+
+export interface PatientAssistantChatResponse {
+  provider_requested: AssistantProvider;
+  provider_used: AssistantProvider;
+  model: string;
+  fallback_used: boolean;
+  system_prompt: string;
+  patient_context: PatientAssistantContext;
+  reply: string;
+  error?: string | null;
+}
+
 export interface Doctor {
   id: number;
   email: string;

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
-from app.db.session import get_db
 
+from app.api.deps import get_current_user, get_permissions_for_user
+from app.db.session import get_db
 from app.models.models import User
-from app.schemas.schemas import Token, UserCreate, UserOut
-from app.services.services import authenticate_user, create_user
+from app.schemas.schemas import AuthMeOut, Token, UserCreate, UserOut
 from app.core.security import create_access_token
+from app.services.services import authenticate_user, create_user, update_user_login
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,6 +40,12 @@ def login(
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    update_user_login(db, user.id)
     access_token = create_access_token(user.id, user.clinic_id, user.role)
     return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/me", response_model=AuthMeOut)
+def me(current_user: User = Depends(get_current_user)) -> AuthMeOut:
+    return AuthMeOut(user=current_user, permissions=get_permissions_for_user(current_user))
 

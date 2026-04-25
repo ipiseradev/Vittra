@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 
 interface PrivateRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function PrivateRoute({ children }: PrivateRouteProps) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type DependencyList } from 'react';
 
 interface UseApiOptions {
   onSuccess?: () => void;
@@ -7,7 +7,7 @@ interface UseApiOptions {
 
 export function useApi<T>(
   fn: () => Promise<T>,
-  deps: React.DependencyList = [],
+  deps: DependencyList = [],
   options?: UseApiOptions
 ) {
   const [data, setData] = useState<T | null>(null);

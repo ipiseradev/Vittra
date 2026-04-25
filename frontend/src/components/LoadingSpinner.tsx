@@ -1,9 +1,30 @@
-export function LoadingSpinner() {
+type LoadingSpinnerProps = {
+  label?: string;
+  fullscreen?: boolean;
+};
+
+export function LoadingSpinner({
+  label = "Cargando workspace...",
+  fullscreen = false,
+}: LoadingSpinnerProps) {
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-        <p className="text-gray-600 text-sm">Cargando...</p>
+    <div
+      className={
+        fullscreen
+          ? "flex min-h-screen items-center justify-center px-6"
+          : "flex items-center justify-center py-12"
+      }
+    >
+      <div className="surface-card flex min-w-[220px] flex-col items-center gap-4 px-8 py-8 text-center">
+        <div className="relative h-14 w-14">
+          <div className="absolute inset-0 rounded-3xl bg-sky-100" />
+          <div className="absolute inset-0 animate-spin rounded-3xl border-4 border-sky-100 border-t-sky-700" />
+          <div className="absolute inset-3 rounded-2xl bg-white" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Vittra</p>
+          <p className="mt-1 text-sm text-slate-500">{label}</p>
+        </div>
       </div>
     </div>
   );
@@ -11,11 +32,11 @@ export function LoadingSpinner() {
 
 export function LoadingCard() {
   return (
-    <div className="bg-white rounded-lg border border-gray-100 p-6 space-y-4">
-      <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
+    <div className="surface-card space-y-4 p-6">
+      <div className="h-4 w-1/4 animate-pulse rounded bg-slate-200" />
       <div className="space-y-3">
-        <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+        <div className="h-3 animate-pulse rounded bg-slate-200" />
+        <div className="h-3 w-5/6 animate-pulse rounded bg-slate-200" />
       </div>
     </div>
   );

@@ -1,57 +1,59 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { BookOpen, CalendarCheck2, Search, XCircle } from "lucide-react";
 
 import { trainityApi } from "../../api/trainityApi";
-import type { Client, Reservation } from "../../types/domain";
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingSpinner,
+  MetricCard,
+  PageHeader,
+  SuccessAlert,
+} from "../../components";
+import type { Reservation } from "../../types/domain";
 
 type FeedbackState = {
   type: "success" | "error";
   message: string;
 } | null;
 
-function StatusBadge({ status }: { status: string }) {
-  const colors = {
-    booked: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    checked_in: "bg-blue-50 text-blue-700 ring-blue-200",
-    cancelled: "bg-slate-100 text-slate-700 ring-slate-200",
-  };
-  
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${colors[status as keyof typeof colors] || colors.cancelled}`}>
-      {status === 'booked' ? 'Reservado' : status === 'checked_in' ? 'Presente' : 'Cancelado'}
-    </span>
-  );
-}
+const statusLabelMap: Record<Reservation["status"], string> = {
+  booked: "Reservada",
+  checked_in: "Check-in",
+  cancelled: "Cancelada",
+};
+
+const statusToneMap: Record<Reservation["status"], string> = {
+  booked: "bg-emerald-50 text-emerald-700",
+  checked_in: "bg-sky-50 text-sky-700",
+  cancelled: "bg-slate-100 text-slate-700",
+};
 
 export function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "booked" | "checked_in" | "cancelled">("all");
-
-  const filteredReservations = useMemo(() => {
-    return reservations.filter(r => {
-      const matchesStatus = statusFilter === "all" || r.status === statusFilter;
-      const matchesSearch = !search || 
-        r.client_name.toLowerCase().includes(search.toLowerCase()) ||
-        r.class_title.toLowerCase().includes(search.toLowerCase());
-      return matchesStatus && matchesSearch;
-    });
-  }, [reservations, search, statusFilter]);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "booked" | "checked_in" | "cancelled"
+  >("all");
 
   async function fetchReservations(params?: { search?: string; status?: string }) {
-    setLoadingList(true);
     try {
+      setLoading(true);
       const data = await trainityApi.getReservations({
-        search: params?.search || "",
-        status: params && params.status !== "all" ? params.status : undefined,
+        search: params?.search ?? "",
+        status: params?.status && params.status !== "all" ? params.status : undefined,
       });
       setReservations(data);
     } catch {
-      setFeedback({ type: "error", message: "No se pudieron cargar las reservas." });
+      setFeedback({
+        type: "error",
+        message: "No se pudieron cargar las reservas.",
+      });
       setReservations([]);
     } finally {
-      setLoadingList(false);
+      setLoading(false);
     }
   }
 
@@ -61,9 +63,34 @@ export function ReservationsPage() {
 
   useEffect(() => {
     if (!feedback) return;
-    const timeout = setTimeout(() => setFeedback(null), 4000);
-    return () => clearTimeout(timeout);
+    const timeoutId = window.setTimeout(() => setFeedback(null), 2500);
+    return () => window.clearTimeout(timeoutId);
   }, [feedback]);
+
+  const filteredReservations = useMemo(() => {
+    return reservations.filter((reservation) => {
+      const matchesStatus =
+        statusFilter === "all" || reservation.status === statusFilter;
+      const query = search.toLowerCase();
+      const matchesSearch =
+        !query ||
+        reservation.client_name.toLowerCase().includes(query) ||
+        reservation.class_title.toLowerCase().includes(query);
+      return matchesStatus && matchesSearch;
+    });
+  }, [reservations, search, statusFilter]);
+
+  const stats = useMemo(
+    () => ({
+      total: filteredReservations.length,
+      booked: filteredReservations.filter((item) => item.status === "booked").length,
+      checkedIn: filteredReservations.filter((item) => item.status === "checked_in")
+        .length,
+      cancelled: filteredReservations.filter((item) => item.status === "cancelled")
+        .length,
+    }),
+    [filteredReservations]
+  );
 
   async function onSearch(event: FormEvent) {
     event.preventDefault();
@@ -71,136 +98,151 @@ export function ReservationsPage() {
   }
 
   async function onCancel(reservationId: number) {
-    if (!window.confirm("¿Cancelar esta reserva?")) return;
     try {
       await trainityApi.cancelReservation(reservationId);
-      setFeedback({ type: "success", message: "Reserva cancelada correctamente." });
-      await fetchReservations();
+      setFeedback({
+        type: "success",
+        message: "Reserva cancelada correctamente.",
+      });
+      await fetchReservations({ search, status: statusFilter });
     } catch {
-      setFeedback({ type: "error", message: "Error al cancelar reserva." });
+      setFeedback({
+        type: "error",
+        message: "No se pudo cancelar la reserva.",
+      });
     }
   }
 
-  function resetFilters() {
-    setSearch("");
-    setStatusFilter("all");
-    fetchReservations();
+  if (loading) {
+    return <LoadingSpinner fullscreen label="Cargando reservas..." />;
   }
 
-  const totalReservations = filteredReservations.length;
-  const booked = filteredReservations.filter(r => r.status === 'booked').length;
-  const present = filteredReservations.filter(r => r.status === 'checked_in').length;
-  const cancelled = filteredReservations.filter(r => r.status === 'cancelled').length;
-
   return (
-    <section className="space-y-6">
-      <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Reservas</h1>
-            <p className="mt-1 text-sm text-slate-600">Gestioná las reservas de clases de tus clientes.</p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4 xl:min-w-[500px]">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total</p>
-              <p className="text-xl font-semibold text-slate-900">{totalReservations}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Reservadas</p>
-              <p className="text-xl font-semibold text-emerald-800">{booked}</p>
-            </div>
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-blue-700">Presentes</p>
-              <p className="text-xl font-semibold text-blue-800">{present}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Canceladas</p>
-              <p className="text-xl font-semibold text-slate-900">{cancelled}</p>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="page-shell">
+      <PageHeader
+        eyebrow="Reservas"
+        title="Reservas de clases"
+        description="Un módulo secundario pero consistente para mostrar reservas, check-ins y estados operativos sin salir del lenguaje visual de Vittra."
+      />
 
-      <form onSubmit={onSearch} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-slate-900">Buscar y filtrar</h2>
-          <p className="mt-1 text-sm text-slate-600">Por cliente o clase.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-[1.6fr_1fr_auto_auto]">
-          <input
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-            placeholder="Buscar cliente o clase"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {feedback?.type === "error" ? (
+        <ErrorAlert message={feedback.message} onDismiss={() => setFeedback(null)} />
+      ) : null}
+      {feedback?.type === "success" ? (
+        <SuccessAlert message={feedback.message} />
+      ) : null}
+
+      <section className="dashboard-grid">
+        <MetricCard
+          label="Reservas visibles"
+          value={stats.total}
+          helper="Resultado según filtros"
+          icon={BookOpen}
+          tone="sky"
+        />
+        <MetricCard
+          label="Reservadas"
+          value={stats.booked}
+          helper="Pendientes de check-in"
+          icon={CalendarCheck2}
+          tone="teal"
+        />
+        <MetricCard
+          label="Con check-in"
+          value={stats.checkedIn}
+          helper="Asistencia confirmada"
+          icon={CalendarCheck2}
+          tone="violet"
+        />
+        <MetricCard
+          label="Canceladas"
+          value={stats.cancelled}
+          helper="Bajas registradas"
+          icon={XCircle}
+          tone="slate"
+        />
+      </section>
+
+      <form onSubmit={onSearch} className="surface-card p-6">
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.7fr_auto_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              className="input-field pl-11"
+              placeholder="Buscar por cliente o clase"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
           <select
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            className="select-field"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as typeof statusFilter)
+            }
           >
             <option value="all">Todos los estados</option>
             <option value="booked">Reservadas</option>
-            <option value="checked_in">Presentes</option>
+            <option value="checked_in">Check-in</option>
             <option value="cancelled">Canceladas</option>
           </select>
-          <button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800" type="submit">
+          <button type="submit" className="btn-primary">
             Buscar
           </button>
-          <button className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" type="button" onClick={resetFilters}>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("all");
+              fetchReservations();
+            }}
+            className="btn-secondary"
+          >
             Limpiar
           </button>
         </div>
       </form>
 
-      {feedback && (
-        <div className={`rounded-2xl border px-4 py-3 text-sm shadow-sm ${
-          feedback.type === "success" 
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700" 
-            : "border-red-200 bg-red-50 text-red-700"
-        }`}>
-          {feedback.message}
-        </div>
-      )}
-
-      {loadingList && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-          <p className="text-sm text-slate-600">Cargando reservas...</p>
-        </div>
-      )}
-
-      {!loadingList && filteredReservations.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-          <h3 className="text-base font-semibold text-slate-800">No hay reservas</h3>
-          <p className="mt-1 text-sm text-slate-600">Cuando haya reservas aparecerán aquí.</p>
-        </div>
-      )}
-
-      {!loadingList && filteredReservations.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {filteredReservations.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No hay reservas para mostrar"
+          description="Probá ajustando la búsqueda o cargando más reservas en el backend."
+        />
+      ) : (
+        <section className="grid gap-4 lg:grid-cols-2">
           {filteredReservations.map((reservation) => (
-            <div key={reservation.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="truncate text-lg font-semibold text-slate-900">{reservation.client_name}</h3>
-                    <StatusBadge status={reservation.status} />
-                  </div>
-                  <p className="text-sm text-slate-600 mb-1">{reservation.class_title}</p>
-                  <p className="text-xs text-slate-500">ID Reserva: #{reservation.id}</p>
+            <article key={reservation.id} className="surface-card p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-lg font-semibold text-slate-950">
+                    {reservation.client_name}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {reservation.class_title}
+                  </p>
+                  <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                    Reserva #{reservation.id}
+                  </p>
                 </div>
-                {reservation.status !== 'cancelled' && (
-                  <button
-                    className="ml-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition whitespace-nowrap"
-                    onClick={() => onCancel(reservation.id)}
-                  >
-                    Cancelar
-                  </button>
-                )}
+                <span className={`pill ${statusToneMap[reservation.status]}`}>
+                  {statusLabelMap[reservation.status]}
+                </span>
               </div>
-            </div>
+              {reservation.status !== "cancelled" ? (
+                <button
+                  type="button"
+                  onClick={() => onCancel(reservation.id)}
+                  className="btn-secondary mt-6 text-rose-700"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancelar reserva
+                </button>
+              ) : null}
+            </article>
           ))}
-        </div>
+        </section>
       )}
-    </section>
+    </div>
   );
 }

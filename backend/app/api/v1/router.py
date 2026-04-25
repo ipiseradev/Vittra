@@ -4,6 +4,8 @@ from app.api.v1.endpoints import (
     appointments,
     auth,
     billing,
+    dashboard,
+    doctors,
     medical_records,
     patients,
     prescriptions,
@@ -11,6 +13,8 @@ from app.api.v1.endpoints import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(dashboard.router)
+api_router.include_router(doctors.router)
 api_router.include_router(patients.router)
 api_router.include_router(appointments.router)
 api_router.include_router(medical_records.router)

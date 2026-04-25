@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.db.bootstrap import bootstrap_local_sqlite
 
 app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0")
 
@@ -15,6 +16,11 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+
+@app.on_event("startup")
+def startup() -> None:
+    bootstrap_local_sqlite()
 
 
 @app.get("/health", tags=["health"])

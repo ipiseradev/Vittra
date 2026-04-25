@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -44,6 +45,24 @@ class Settings(BaseSettings):
     # Stripe (for future payments)
     STRIPE_API_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
+
+    # LLM providers
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4.1"
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-5"
+    LLM_TIMEOUT_SECONDS: float = 30.0
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalize_debug(cls, value: object) -> object:
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production"}:
+                return False
+            if normalized in {"debug", "dev", "development"}:
+                return True
+        return value
 
     model_config = SettingsConfigDict(
         env_file=".env",

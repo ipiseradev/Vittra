@@ -10,12 +10,24 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers
+    });
+  } catch {
+    throw new Error("No se pudo conectar con el backend");
+  }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      storage.clearToken();
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+
     let message = "Request failed";
     try {
       const body = (await response.json()) as { detail?: string };
